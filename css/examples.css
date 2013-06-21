@@ -1,0 +1,14 @@
+LABEL.error {
+	width: 98%;
+	padding: 1%;
+	background: #c00;
+	color: #fff;
+	text-align: center;
+	display: block;
+	margin: 1% 0;
+	text-shadow: none;
+}
+#footer {
+	padding: 1%;
+}
+
