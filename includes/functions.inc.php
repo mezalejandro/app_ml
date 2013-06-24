@@ -21,17 +21,22 @@ function headerHtml($user)
     	<title>App MercadoLibre</title> 
     	<link rel="stylesheet" href="jquery.mobile/jquery.mobile-1.3.1.min.css" />
     	<script src="http://code.jquery.com/jquery-1.8.2.min.js"></script>
-    	<script src="http://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.min.js"></script>
-        
-    </head> 
+    	<script src="http://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.min.js"></script>';
+    if(basename($_SERVER['SCRIPT_NAME']) == 'publish.php')
+    {
+        $header .= '<script type="text/javascript" src="js/reCopy.js"></script>';
+        $header .= '<script type="text/javascript" src="js/script.js"></script>';
+    }
     
+    $header .= '
+    </head> 
     <body> 
     
     <div data-role="page">
     
     	<div data-role="header">
     		<h1 style="color:#716c3b;"><img src="imagenes/user.png"/>'.$user.'</h1>';
-     if(basename($_SERVER['SCRIPT_NAME']) != 'home.php' || isset($_GET['q']) && !empty($_GET['q']))
+     if(basename($_SERVER['SCRIPT_NAME']) != 'home.php')
      {
         $header .= '<a href="home.php" data-icon="home" data-iconpos="notext" data-direction="reverse">Inicio</a>';
      }
@@ -39,6 +44,7 @@ function headerHtml($user)
      {
         $header .= '<a href="'.$meli->getLogoutUrl().'" data-role="button" data-icon="delete" class="ui-btn-left">Salir</a>';
      }
+     
      $header .= '<a href="profile.php" data-role="button" data-icon="gear" class="ui-btn-right">Mi perfil</a>
     	</div><!-- /header -->';
      $header .= '<div data-role="content">';
@@ -101,38 +107,56 @@ function checkLogin()
 
 function displayCategories()
 {
-    global $meli;
+    global $meli,$user;
     
-    $category = '';
+    $body = '';
     
-    $category = $meli->get('/sites/MLA/categories/');
-
-    foreach ($category['json'] as &$categoryItem):
-		   $category .= '<li><a href="sub_category.php?id=' . $categoryItem['id'] . '">'. html_entity_decode($categoryItem['name']).'</a></li>';
-    	
-    endforeach;
+    $body .= '<div class="content-primary">';
+    if(isset($_GET['sub']) && !empty($_GET['sub']) )
+    {
+        $pais = $user['json']['site_id'];
+        $sub_category = $meli->get('/categories/'.$_GET['sub']);
+        foreach ($sub_category['json'] as &$nombreCat)
+        {
+        	   
+               $nombre_category = $sub_category['json']['name'];          
+        }
+        
+        if(count($sub_category['json']['children_categories']) == 0)
+        {
+            $body .= uploadNewProduct($_GET['sub'],$nombre_category);
+        }
+        else
+        {
+            $body .= '<ul data-role="listview" data-theme="d" data-divider-theme="d">';
+            $body .= '<li data-role="list-divider" style="margin-bottom:10px;">Seleccione una sub categor&iacute;a de '.htmlentities($nombre_category).'</li></ul>';       
+            $body .= '<ul data-role="listview">';
+        }
+        foreach ($sub_category['json']['children_categories'] as &$sub_categoryItem)
+        {
+        	   $body .= '<li><a href="?sub='.$sub_categoryItem['id'].'">'. html_entity_decode($sub_categoryItem['name']).'</a></li>';            
+        }
+        $body .= '</ul>';
+    }
+    else
+    {
+        $body .= '<ul data-role="listview" data-theme="d" data-divider-theme="d"><li data-role="list-divider" style="margin-bottom:10px;">Seleccione una categor&iacute;a</li></ul>';       
+        $body .= '<ul data-role="listview">';
+        $pais = $user['json']['site_id'];
+        $category = $meli->get('/sites/'.$pais.'/categories/');
+        
+        foreach ($category['json'] as &$categoryItem)
+        {
+        	   $body .= '<li><a href="?sub='.$categoryItem['id'].'">'. html_entity_decode($categoryItem['name']).'</a></li>';
+        }
+        $body .= '</ul>';
+    }
     
-    return $category;
+    $body .= '</div>'; 
+    
+    return $body;
 }
 
-function displaySubCategories($id)
-{
-    global $meli;
-    
-    $sub_cat = '';
-    
-    $category = $meli->get('/categories/'.$id);
-    $categoryItem = array();
-    $sub_cat .= 'Nombre sub categoria: <b>'.$category['json']['name'].'<br/>';
-    foreach ($category['json'] as &$categoryItem):
-		   $sub_cat .= $category['json']['children_categories']['name'].'<br/>';
-           //$sub_cat .= '<li><a href="sub_category.php?id=' . $categoryItem['children_categories'][id] . '">'. $categoryItem[children_categories][name].'</a></li>';
-    	
-    endforeach;
-    
-    
-    return $sub_cat;
-}
 
 function displayMenuProfile()
 {
@@ -258,44 +282,6 @@ function displayPhone($phone)
     return $telefono;
 }
 
-function displaySearchform()
-{
-    global $meli;
-   
-    $form = '';
-    
-    if(isset($_REQUEST['q']))
-    {
-    	$query = $_REQUEST['q'];
-    
-    	$search = $meli->get('/sites/#{siteId}/search/',array(
-    		'q' => $query)
-    	);
-    }
-    
-    $form .= '<form>';
-    $form .= '<label for="search-mini">Buscar productos:</label>';
-    $form .= '<input type="search" name="q" value="'.$query.'" data-mini="true" />';
-    $form .= '</form><br/><br/>';
-    
-    /*$form .= '<div class="content-primary">	
-		      <ul data-role="listview">';
-    	
-    		foreach ($search['json']['results'] as &$searchItem)
-            {
-                $form .= '<li><a href="product.php?id="'.$searchItem['id'].'">
-				<img src="'.$searchItem['thumbnail'].'" />
-				<h3>'.$searchItem['title'].'</h3>
-				<p>'.$searchItem['subtitle'].'</p>
-                <p class="ui-li-aside"><strong>'.$searchItem['price'].' '.$searchItem['currency_id'].'</strong></p>
-			    </a></li>';
-            }
-    $form .= '</ul>';
-    $form .= '</div>';*/
-   	
-    return $form;
-}
-
 function displayIndexmenu()
 {
     $menu = '';
@@ -319,17 +305,167 @@ function displayIndexmenu()
     
     return $menu;
 }
+
+
+function uploadNewProduct($cat_id,$cat_name)
+{
+    global $meli, $user;
+    
+    $form = '';
+    
+    $error = "";
+    if(isset($_POST['publicar']))
+    {
+        if(empty($_POST['title']))
+        {
+            $error = '<font color="red">Ingrese titulo *</font>';
+        }
+        else if(empty($_POST['price']))
+        {
+            $error = '<font color="red">Ingrese precio *</font>';
+        }
+        else if(empty($_POST['condition']))
+        {
+            $error = '<font color="red">Seleccione un estado del producto *</font>';
+        }
+        else if(empty($_POST['description']))
+        {
+            $error = '<font color="red">Escribe una descripci&oacute;n *</font>';
+        }
+        else
+        {
+            
+            foreach($_FILES['pictures']['tmp_name'] as $key => $tmp_name )
+            {
+        		$file_name = $key.$_FILES['pictures']['name'][$key];
+        		$file_size =$_FILES['pictures']['size'][$key];
+        		$file_tmp =$_FILES['pictures']['tmp_name'][$key];
+        		$file_type=$_FILES['pictures']['type'][$key];	
+                
+            }
+            $item = array(
+            "title" => $_POST['title'],
+            "subtitle" => $_POST['subtitle'],
+            "category_id" => $cat_id,
+            "price" => $_POST['price'],
+            "currency_id" => "ARS",
+            "available_quantity" => 1,
+            "buying_mode" => "buy_it_now",
+            "listing_type_id" => "bronze",
+            "condition" => $_POST['condition'],
+            "description" => "Item:, <strong>'".$_POST['description']."' </strong>",
+            "video_id" => $_POST['video_id'],
+            "warranty" => $_POST['warranty'],
+            "pictures" => array(
+                                    array("source" => $_FILES['pictures']['name'])
+                                       
+                                    
+                                )
+            );
+            /*$accessToken = $meli->getAccessToken();
+        	$ch = curl_init();
+        	$data = array('file' => $_FILES['pictures']['name']);
+        	curl_setopt($ch, CURLOPT_URL, "https://api.mercadolibre.com/pictures?access_token=".$accessToken['value']);
+        	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        	curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+        	$json=curl_exec($ch);
+        	curl_close($ch);
+        	$imagen=json_decode($json, true);
+        	$imagen["id"];
+        	#Linkear la imagen al item
+        	$response=$meli->postWithAccessToken('/items/MLA462432007/pictures',array('id' => $imagen['id']));*/
+        	
+            $item = $meli->postWithAccessToken("/items", $item);
+            
+            echo 'ok';
+            echo '<pre>';
+            print_r($item);
+            echo '</pre>';
+            
+            die();
+        }
+        
+    }
+    $form .= '<div class="content-primary">
+        <form method="POST" action="publish.php?sub='.$_GET['sub'].'" data-ajax="false" enctype="multipart/form-data">
+        <ul data-role="listview" data-theme="d" data-divider-theme="d" style="margin-bottom:10px;"><li data-role="list-divider">Publicar producto para '.$cat_name.'</li></ul><br/>
+        '.$error.'<br/>
+        <br/>
+        <ul data-role="listview">
+        <li data-role="fieldcontain">
+        <label for="title">Titulo:</label>
+        <input type="text" name="title" id="title" value=""/>
+        </li>
+        <li data-role="fieldcontain">
+        <label for="title">Sub titulo:</label>
+        <input type="text" name="subtitle" id="subtitle" value=""/>
+        </li>
+        <li data-role="fieldcontain">
+        <label for="description">Descripci&oacute;n:</label>
+        <textarea cols="40" rows="8" name="description" id="description"></textarea>
+        </li>
+        
+        <li data-role="fieldcontain">
+        <label for="price">Estado:</label>
+        <fieldset data-role="controlgroup">
+	   
+     	<input type="radio" name="condition" id="new" value="new"/>
+     	<label for="new">nuevo</label>
+
+     	<input type="radio" name="condition" id="used" value="used"/>
+     	<label for="used">usado</label>
+        </fieldset>
+        </li>        
+        <li data-role="fieldcontain">
+        <label for="price">Precio:</label>
+        <input type="text" name="price" id="price" value="" />
+        </li>
+        <li data-role="fieldcontain">
+        <label for="price">Video youtube ID:</label>
+        <input type="text" name="video_id" id="video_id" value=""/>
+        </li>
+        <li data-role="fieldcontain">
+        <label for="price">Garantia:</label>
+        <input type="text" name="warranty" id="warranty" value=""/>
+        </li>
+        <li data-role="fieldcontain">
+        <label for="fotos">Fotos:</label>
+        <input type="file" name="pictures[]" id="pictures" data-clear-btn="true">
+        <input type="file" name="pictures[]" id="pictures" data-clear-btn="true">
+        <input type="file" name="pictures[]" id="pictures" data-clear-btn="true">
+        <input type="file" name="pictures[]" id="pictures" data-clear-btn="true">
+        <input type="file" name="pictures[]" id="pictures" data-clear-btn="true">
+        </li>
+        <li class="ui-body ui-body-b">
+        <fieldset class="ui-grid-a">
+        <div class="ui-block-a"><a href="index.php"><button type="submit" data-theme="d">Cancelar</button></a></div>
+        <div class="ui-block-b"><input type="submit" data-theme="a" name="publicar" value="Publicar"></div>
+        </fieldset>
+        </li>
+        
+        </ul>
+        
+        </form>
+        
+        </div><!--/content-primary -->	';
+    
+    return $form;
+}
 function footerHtml()
 {
     $footer = '';
     
     $footer .= '
     </div><!-- /content -->
-        <div data-role="footer" class="footer-docs" data-theme="c">
-    					<p class="jqm-version"></p>
-    				<p>Hackaton Mercado Libre &#64; 2013</p>
-    	</div>
-	</div><!-- /page -->
+    <div data-role="footer" class="footer-docs" data-theme="c">
+    <p class="jqm-version"></p>
+    <p>Hackaton Mercado Libre &#64; 2013</p>';
+    if(basename($_SERVER['SCRIPT_NAME']) == 'publish.php' && isset($_GET['sub']))                
+    {
+        $footer .= '<a href="publish.php" data-role="button" data-theme="a" data-icon="arrow-l" class="ui-btn-right">Volver</a>';
+    }
+    $footer .= '</div>
+    </div><!-- /page -->
     </body>
     </html>';
     return $footer;

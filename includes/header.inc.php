@@ -6,7 +6,10 @@
  * @copyright 2013
  */
 
-error_reporting(0);
+if(isset($_GET['debug']) && $_GET['debug'] == 1)
+{
+    error_reporting(1);
+}
 require_once 'settings.inc.php';
 require_once 'functions.inc.php';
 

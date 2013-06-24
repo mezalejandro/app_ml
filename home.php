@@ -14,9 +14,6 @@ require_once 'includes/header.inc.php';
     die();
 }
 
-echo '<pre>';
-print_r($user);
-echo '</pre>';
 $body .= headerHtml($user_view);
 
 $body .= displayIndexmenu();   
