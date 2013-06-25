@@ -290,10 +290,10 @@ function displayIndexmenu()
     
     $menu .= '<ul data-role="listview" data-theme="d" data-divider-theme="d">';
 	   $menu .= '<li data-role="list-divider">Menu</li>';
-        /*$menu .= '<li><a href="view_publish.php">			
+        $menu .= '<li><a href="view_publish.php">			
 					<h3>Productos publicados</h3>
-					<p>Ver todas los productos ya publicados</p>
-					</a></li>';*/
+					<p>Ver mis publicaciones</p>
+					</a></li>';
         
         $menu .= '<li><a href="publish.php">
 				      <h3>Vender producto</h3>
@@ -362,25 +362,7 @@ function uploadNewProduct($cat_id,$cat_name)
                                     
                                 )
             );
-            /*$accessToken = $meli->getAccessToken();
-        	$ch = curl_init();
-        	$data = array('file' => $_FILES['pictures']['name']);
-        	curl_setopt($ch, CURLOPT_URL, "https://api.mercadolibre.com/pictures?access_token=".$accessToken['value']);
-        	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        	curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-        	$json=curl_exec($ch);
-        	curl_close($ch);
-        	$imagen=json_decode($json, true);
-        	$imagen["id"];
-        	#Linkear la imagen al item
-        	$response=$meli->postWithAccessToken('/items/MLA462432007/pictures',array('id' => $imagen['id']));*/
-        	
             $item = $meli->postWithAccessToken("/items", $item);
-            
-            echo 'ok';
-            echo '<pre>';
-            print_r($item);
-            echo '</pre>';
             
             die();
         }
@@ -451,6 +433,47 @@ function uploadNewProduct($cat_id,$cat_name)
     
     return $form;
 }
+
+function misPublicaciones($user,$pais)
+{
+    global $meli;
+    
+    $body = '';
+    error_reporting(0);
+    
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, "https://api.mercadolibre.com/sites/".$pais."/search?nickname=".$user);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS);
+    $json=curl_exec($ch);
+    curl_close($ch);
+    $publicaciones =json_decode($json, true);
+    
+    if(count($publicaciones['results']) > 0)
+    {
+        $body .= '<h1>NO TIENE PUBLICACIONES!</h1>';
+    }
+    else
+    {
+        $body .= '<div class="content-primary">';
+        
+        $body .= '<ul data-role="listview" data-theme="d" data-divider-theme="d">';
+    	   $body .= '<li data-role="list-divider">Mis Publicaciones</li>';
+        $body .= '<ul data-role="listview" data-inset="true">';
+        foreach ($publicaciones['results'] as &$mispublicaciones):
+    		   $body .=  ' <li><a href="'.$mispublicaciones['permalink'].'">
+                <img src="'.$mispublicaciones['thumbnail'].'">
+                <h2>'.$mispublicaciones['title'].'</h2>
+                <p>'.$mispublicaciones['subtitle'].'</p></a>
+                </li>';    	
+        endforeach;
+        $body .= '</ul>';
+        
+        $body .= '</ul>';
+        $body .= '</div>';
+    }
+    return $body;
+}
 function footerHtml()
 {
     $footer = '';
@@ -463,6 +486,10 @@ function footerHtml()
     if(basename($_SERVER['SCRIPT_NAME']) == 'publish.php' && isset($_GET['sub']))                
     {
         $footer .= '<a href="publish.php" data-role="button" data-theme="a" data-icon="arrow-l" class="ui-btn-right">Volver</a>';
+    }
+    else if(basename($_SERVER['SCRIPT_NAME']) == 'view_publish.php' && isset($_GET['ver_publi']))
+    {
+        $footer .= '<a href="view_publish.php" data-role="button" data-theme="a" data-icon="arrow-l" class="ui-btn-right">Volver</a>';
     }
     $footer .= '</div>
     </div><!-- /page -->
